@@ -107,6 +107,23 @@ static int	get_pixel(const IMG *img, int i, int j)
 	return (ISBIT((7 - j % 8), img->data[i * rb + j / 8]));
 }
 
+/**
+ * Считывает одно поле типа int из файла.
+ *
+ * @param f           файловый указатель (открыт для бинарного чтения)
+ * @param dest        указатель, куда будет записан прочитанный int
+ * @param field_name  имя поля для сообщения об ошибке
+ *
+ * @note При ошибке функция завершает программу через exit(EXIT_FAILURE).
+ */
+static void read_int_field(FILE *f, int *dest, const char *field_name)
+{
+    if (fread(dest, sizeof(int), 1, f) != 1) {
+        fprintf(stderr, "Ошибка чтения поля %s\n", field_name);
+        exit(EXIT_FAILURE);  // или return -1 и обработать на уровне вызывающей функции
+    }
+}
+
 /*
  * ---------------------------------------------------------------
  * Загрузка глифа из файла
@@ -139,12 +156,12 @@ static IMG	*load_img(const char *file)
 		return (NULL);
 	}
 
-	fread(&(img->w), sizeof(int), 1, F);
-	fread(&(img->h), sizeof(int), 1, F);
-	fread(&(img->dx), sizeof(int), 1, F);
-	fread(&(img->count), sizeof(int), 1, F);
-	fread(&(img->id), sizeof(int), 1, F);
-	fread(&(img->bytes), sizeof(int), 1, F);
+	read_int_field(F, &img->w, "w");
+	read_int_field(F, &img->h, "h");
+	read_int_field(F, &img->dx, "dx");
+	read_int_field(F, &img->count, "count");
+	read_int_field(F, &img->id, "id");
+	read_int_field(F, &img->bytes, "bytes");
 
 	img->data = (unsigned char *)calloc(img->bytes, 1);
 	if (img->data == NULL)
@@ -154,7 +171,18 @@ static IMG	*load_img(const char *file)
 		return (NULL);
 	}
 
-	fread(img->data, 1, img->bytes, F);
+	if (fread(img->data, 1, img->bytes, F) != (size_t)img->bytes)
+	{
+		if (feof(F))
+			fprintf(stderr, "Неожиданный конец файла при чтении %d байт данных\n", img->bytes);
+		else if (ferror(F))
+			perror("Ошибка чтения данных изображения");
+
+		free(img->data);
+		free(img);
+		fclose(F);
+		return NULL;
+	}
 	fclose(F);
 
 	img->density = 0.0;
