@@ -26,32 +26,20 @@
  */
 int is_vowel(const int c)
 {
-	const char vowels[] = "aeiouyAEIOUY";
-	int i = 0;
+    int lower = tolower((unsigned char)c);
 
-	while (vowels[i] != '\0')
-	{
-		if (c == vowels[i])
-		{
-			return 1;
-		}
-		++i;
-	}
-
-	return 0;
-}
-
-/**
- * Проверяет, является ли символ согласной буквой английского алфавита.
- *
- * Согласные: буквы английского алфавита, не являющиеся гласными.
- *
- * @param c Символ для проверки.
- * @return  1 если символ — согласная, 0 в противном случае.
- */
-int is_consonant(const int c)
-{
-	return isalpha(c) && !is_vowel(c);
+    switch (lower)
+    {
+        case 'a':
+        case 'e':
+        case 'i':
+        case 'o':
+        case 'u':
+        case 'y':
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 /**
@@ -90,50 +78,48 @@ FileStats analyze_file(FILE *file)
 	{
 		++stats.total_chars;
 
+		if (isalpha(c))
+		{
+			++stats.letters;
+
+			if (islower(c)) ++stats.lowercase;
+			if (isupper(c)) ++stats.uppercase;
+
+			if (is_vowel(c))
+			{
+				++stats.vowels;
+				continue;
+			}
+			else
+			{
+				++stats.consonants;
+				continue;
+			}
+		}
 		if (c == '\n')
 		{
 			++stats.lines;
+			continue;
 		}
 
 		if (isdigit(c))
 		{
 			++stats.digits;
+			continue;
 		}
 
 		if (ispunct(c))
 		{
 			++stats.punct;
+			continue;
 		}
 
 		if (isspace(c))
 		{
 			++stats.spaces;
+			continue;
 		}
 
-		if (isalpha(c))
-		{
-			++stats.letters;
-
-			if (islower(c))
-			{
-				++stats.lowercase;
-			}
-
-			if (isupper(c))
-			{
-				++stats.uppercase;
-			}
-
-			if (is_vowel(c))
-			{
-				++stats.vowels;
-			}
-
-			if (is_consonant(c))
-			{
-				++stats.consonants;
-			}
-		}
 	}
 
 	return stats;
